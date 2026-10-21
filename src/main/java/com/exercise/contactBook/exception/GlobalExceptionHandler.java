@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
@@ -86,6 +87,10 @@ public class GlobalExceptionHandler {
         ResponseEntity<ErrorResponseDTO> response = build(HttpStatus.CONFLICT , "this operation conflicts with existing data", null , request);
         response.getBody().setTraceId(traceId);
         return response;
+    }
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponseDTO> handleOptimisticLock(ObjectOptimisticLockingFailureException ex , HttpServletRequest request){
+        return build(HttpStatus.CONFLICT , "Someone else just changed this. refresh and try again" , null , request);
     }
 
    @ExceptionHandler(Exception.class)

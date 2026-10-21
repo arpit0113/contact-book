@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -19,6 +21,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
+    public record RotationResult(User user, String refreshToken) {}
 
     @Value("${jwt.refresh-expiration-days:7}")
     private long refreshExpirationDays;
@@ -32,9 +35,9 @@ public class RefreshTokenService {
         return createAndSaveToken(user, family);
     }
 
-    public String rotate(String rawToken) {
-        String hash = hash(rawToken);
-        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash)
+    public RotationResult rotate(String rawToken) {
+
+        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash(rawToken))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
 
         if (existing.isRevoked()) {
@@ -45,19 +48,17 @@ public class RefreshTokenService {
         if (existing.getExpiresAt().isBefore(Instant.now())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
         }
+        if (refreshTokenRepository.revokeIfActive(existing.getId()) == 0) {
+            refreshTokenRepository.revokeFamily(existing.getFamily());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token reuse detected, please log in again");
+        }
 
-        existing.setRevoked(true);
-        refreshTokenRepository.save(existing);
 
-        return createAndSaveToken(existing.getUser(), existing.getFamily());
+        String newToken = createAndSaveToken(existing.getUser(), existing.getFamily());
+
+        return new RotationResult(existing.getUser(), newToken);
     }
 
-    public User getUserForToken(String rawToken) {
-        String hash = hash(rawToken);
-        RefreshToken token = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
-        return token.getUser();
-    }
 
     public void revoke(String rawToken) {
         String hash = hash(rawToken);
@@ -83,7 +84,7 @@ public class RefreshTokenService {
     private String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return Base64.getEncoder().encodeToString(digest.digest(value.getBytes()));
+            return Base64.getEncoder().encodeToString(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }

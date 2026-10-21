@@ -43,10 +43,9 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<TokenPairResponseDTO> refresh(@Valid @RequestBody RefreshTokenRequestDTO dto){
-        String newRefreshToken = refreshTokenService.rotate(dto.getRefreshToken());
-        User user = refreshTokenService.getUserForToken(newRefreshToken);
-        String newAccessToken = userService.generateToken(user);
-        return ResponseEntity.ok(new TokenPairResponseDTO(newAccessToken, newRefreshToken));
+        RefreshTokenService.RotationResult result =  refreshTokenService.rotate(dto.getRefreshToken());
+        String AccessToken = userService.generateToken(result.user());
+        return ResponseEntity.ok(new TokenPairResponseDTO(AccessToken, result.refreshToken()));
     }
 
     @PostMapping("/logout")

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.Locale;
+
 @Data
 public class UserRequestDTO {
     @NotBlank(message = "Name is required")
@@ -18,4 +20,8 @@ public class UserRequestDTO {
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    public void setEmail(String email){
+        this.email = email == null ? null : email.trim().toLowerCase();
+    }
 }

@@ -16,4 +16,8 @@ public class LoginRequestDTO {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    public void setEmail(String email){
+        this.email = email == null ? null : email.trim().toLowerCase();
+    }
 }

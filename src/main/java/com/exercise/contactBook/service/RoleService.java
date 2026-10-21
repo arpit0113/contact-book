@@ -27,6 +27,7 @@ public class RoleService {
     private final UserRepository userRepository;
     private final ApprovalStepRepository approvalStepRepository;
     private final ApprovalPolicyRepository approvalPolicyRepository;
+    private static final Set<String> RESERVED_NAMES = Set.of("SUPER_ADMIN", "USER");
 
     public RoleService(OrgRoleRepository roleRepository, UserRepository userRepository, ApprovalStepRepository approvalStepRepository, ApprovalPolicyRepository approvalPolicyRepository) {
         this.roleRepository = roleRepository;
@@ -86,6 +87,7 @@ public class RoleService {
     public RoleDTO createRole(RoleRequestDTO dto){
         Organization org = currentOrg();
         String name = dto.getName().trim();
+        assertNotReserved(name);
         if(roleRepository.findByOrganizationAndNameIgnoreCase(org , name).isPresent()){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A role with this name is already exists");
         }
@@ -106,6 +108,9 @@ public class RoleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The Admin role cant be changed");
         }
         String name = dto.getName().trim();
+
+        assertNotReserved(name);
+
         if(role.isSystemRole() && !role.getName().equalsIgnoreCase(name)){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Built in roles cant be renamed");
         }
@@ -114,6 +119,11 @@ public class RoleService {
                 .ifPresent(other ->{
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "A role with this name already exists");
                 });
+        boolean losesReview = role.getPermissions().contains(Permission.REQUEST_APPROVE)
+                && !dto.getPermissions().contains(Permission.REQUEST_APPROVE);
+        if(losesReview && approvalStepRepository.existsByApproverRole(role)){
+            throw new ResponseStatusException(HttpStatus.CONFLICT , "This role is an approver in a workflow remove it from the workflow first");
+        }
         role.setName(name);
         role.getPermissions().clear();
         role.getPermissions().addAll(dto.getPermissions());
@@ -125,7 +135,7 @@ public class RoleService {
         OrgRole role = roleRepository.findByIdAndOrganization(id,org)
                 .orElseThrow(() -> new ResourceNotFoundException("Role Not found"));
         if(role.isSystemRole() ){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Built in roles cant be renamed");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Built in roles cant be deleted");
         }
         long users = userRepository.countByOrgRole(role);
         if(users > 0){
@@ -154,7 +164,11 @@ public class RoleService {
                 role.getPermissions().stream().map(Enum::name).sorted().toList(),
                 userRepository.countByOrgRole(role));
     }
-
+    private void assertNotReserved(String name){
+        if(RESERVED_NAMES.contains(name.toUpperCase())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This role name is reserved");
+        }
+    }
     private Organization currentOrg(){
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)

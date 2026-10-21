@@ -9,4 +9,8 @@ public class ResendRequestDTO {
 
     @NotBlank private String requestId;
     @NotBlank @Email private String adminEmail;
+
+    public void setAdminEmail(String adminEmail){
+        this.adminEmail = adminEmail == null ? null : adminEmail.trim().toLowerCase();
+    }
 }

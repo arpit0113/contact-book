@@ -10,6 +10,7 @@ import com.exercise.contactBook.model.Organization;
 import com.exercise.contactBook.model.User;
 import com.exercise.contactBook.repository.*;
 import com.exercise.contactBook.util.JwtUtil;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
     private final OrganizationService organizationService;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -40,11 +40,11 @@ public class UserService {
     private final OrganizationCreationRequestRepository organizationCreationRequestRepository;
     private final ApprovalPolicyRepository approvalPolicyRepository;
 
+
     @Autowired
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil,
-                       AuthenticationManager authenticationManager,
                        OrganizationService organizationService,
                        RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository,
                        ContactRepository contactRepository, ContactChangeRequestRepository contactChangeRequestRepository,
@@ -53,7 +53,6 @@ public class UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
-        this.authenticationManager = authenticationManager;
         this.organizationService = organizationService;
         this.refreshTokenService = refreshTokenService;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -158,13 +157,10 @@ public class UserService {
 
     public UserResponseDTO updateCurrentUser(UserUpdateRequestDTO dto){
        User existingUser = getCurrentUser();
-        if (!existingUser.getEmail().equals(dto.getEmail())) {
-            if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,"email already registered");
-            }
+        if (!existingUser.getEmail().equalsIgnoreCase(dto.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"Email cant be changed");
         }
         existingUser.setName(dto.getName());
-        existingUser.setEmail(dto.getEmail());
 
         User savedUser =  userRepository.save(existingUser);
 
@@ -172,8 +168,12 @@ public class UserService {
 
     }
 
+    @Transactional
     public void deleteUser(){
         User currentUser = getCurrentUser();
+        if(currentUser.getRole() == Role.SUPER_ADMIN){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The super admin account cant be deleted");
+        }
        boolean isOrgAdmin = currentUser.getOrganization()!= null
                             && currentUser.getOrganization().getAdmin()!= null
                              &&   currentUser.getId().equals(currentUser.getOrganization().getAdmin().getId());
@@ -183,6 +183,8 @@ public class UserService {
         }
         refreshTokenRepository.deleteByUser(currentUser);
         contactChangeRequestRepository.deleteByRequestedBy(currentUser);
+        contactChangeRequestRepository.clearReviewer(currentUser);
+        organizationCreationRequestRepository.clearReviewer(currentUser);
         contactRepository.deleteByUserAndType(currentUser, ContactType.PERSONAL);
         userRepository.deleteById(currentUser.getId());
     }
@@ -200,6 +202,8 @@ public class UserService {
         responseDTO.setPermissions(user.getOrgRole() == null ? List.of() : user.getOrgRole().getPermissions().stream().map(Enum::name).sorted().toList());
         responseDTO.setStatus(user.getStatus().name());
         responseDTO.setNeedsApproval(user.getOrgRole() != null && approvalPolicyRepository.existsByRequesterRole(user.getOrgRole()));
+        responseDTO.setAccountType(user.getRole() == Role.SUPER_ADMIN ? "SUPER_ADMIN"
+                :user.getOrganization() == null ? "PERSONAL" : "ORG_MEMBER");
         return responseDTO;
     }
 

@@ -27,4 +27,6 @@ public class ContactRequestDTO {
 
     @NotNull(message = "contact type is required")
     private ContactType type;
+
+
 }

@@ -15,4 +15,5 @@ public class UserResponseDTO {
     private String status;
     private List<String> permissions = new ArrayList<>();
     private boolean needsApproval;
+    private String accountType;
 }

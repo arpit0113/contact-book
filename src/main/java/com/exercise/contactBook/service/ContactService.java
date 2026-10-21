@@ -262,7 +262,7 @@ public class ContactService {
                 seenPhones.add(p.getPhone());
             }
             for (EmailDTO e : dto.getEmails()){
-                seenEmails.add(e.getEmail());
+                seenEmails.add(e.getEmail().toLowerCase());
             }
             try{
                 ContactWriteResultDTO result = addSingleContact(dto,currentUser);
@@ -333,6 +333,7 @@ public class ContactService {
         if(!canActOn(request, approver)){
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This request is not  waiting for your approval");
         }
+        recordAction(request, stepNumber(request), approver, ApprovalDecision.APPROVED, null);
         int step = stepNumber(request);
 
         int totalSteps = request.getWorkflow() == null ? 1 :request.getWorkflow().getSteps().size();
@@ -345,6 +346,7 @@ public class ContactService {
        return applyApprovedRequest(request, approver);
     }
 
+    @Transactional
     public ContactResponseDTO applyApprovedRequest(ContactChangeRequest request, User approver){
         Contact contact;
         if(request.getActionType() == ContactActionType.CREATE){

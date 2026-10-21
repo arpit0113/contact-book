@@ -7,10 +7,12 @@ import com.exercise.contactBook.model.User;
 import com.exercise.contactBook.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(1)
 public class SuperAdminConfig implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -28,14 +30,20 @@ public class SuperAdminConfig implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if(userRepository.findByEmail(superAdminEmail).isPresent()){
+        if(superAdminEmail.isBlank() || superAdminPassword.length() < 8){
+            throw new IllegalStateException(
+                    "set super admin email and super admin password(min 8) in .env"
+            );
+        }
+        String email = superAdminEmail.trim().toLowerCase();
+        if(userRepository.findByEmail(email).isPresent()){
             return;
         }
         User superAdmin = new User();
         superAdmin.setRole(Role.SUPER_ADMIN);
         superAdmin.setOrganization(null);
         superAdmin.setName("Super Admin");
-        superAdmin.setEmail(superAdminEmail);
+        superAdmin.setEmail(email);
         superAdmin.setPassword(passwordEncoder.encode(superAdminPassword));
         superAdmin.setProvider(AuthProvider.LOCAL);
         superAdmin.setStatus(UserStatus.ACTIVE);

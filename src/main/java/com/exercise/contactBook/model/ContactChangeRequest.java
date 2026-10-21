@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "contact_change_request")
+@Table(name = "contact_change_request",  indexes = {
+        @Index(name = "idx_ccr_org_status", columnList = "organization_id, status")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -65,5 +67,8 @@ public class ContactChangeRequest {
 
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ApprovalAction> actions = new ArrayList<>();
+
+    @Version
+    private Long version;
 }
 

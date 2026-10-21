@@ -20,4 +20,8 @@ public class OrgCreationRequestDTO {
     private String password;
 
     private String orgName;
+
+    public void setAdminEmail(String adminEmail){
+        this.adminEmail = adminEmail == null ? null : adminEmail.trim().toLowerCase();
+    }
 }

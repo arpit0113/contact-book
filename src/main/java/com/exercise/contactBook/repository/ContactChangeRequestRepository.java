@@ -27,4 +27,9 @@ public interface ContactChangeRequestRepository extends JpaRepository<ContactCha
     @Transactional
     @Query("update ContactChangeRequest r set r.workflow = null where r.workflow = :wf")
     void clearWorkflow(@Param("wf") ApprovalWorkflow wf);
+
+    @Modifying
+    @Transactional
+    @Query("update ContactChangeRequest r set r.reviewedBy = null where r.reviewedBy = :user")
+    void clearReviewer(@Param("user") User user);
 }

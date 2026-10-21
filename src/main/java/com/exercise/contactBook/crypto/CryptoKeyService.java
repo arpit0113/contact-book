@@ -48,7 +48,7 @@ public class CryptoKeyService {
             cipher.init(Cipher.DECRYPT_MODE , keyPair.getPrivate() , oaepSpec);
             return cipher.doFinal(aesKeyBytes);
         } catch (Exception e){
-            throw new IllegalArgumentException("could not decrypt the key : " +  e.getMessage() );
+            throw new IllegalArgumentException("could not decrypt the key : ");
         }
     }
 
