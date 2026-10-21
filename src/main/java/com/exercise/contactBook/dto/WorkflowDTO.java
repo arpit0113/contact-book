@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class WorkFlowDTO {
+public class WorkflowDTO {
  private Long id;
  private String name;
  private ApprovalMode mode;

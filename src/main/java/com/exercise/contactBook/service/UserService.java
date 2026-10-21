@@ -38,6 +38,7 @@ public class UserService {
     private final ContactChangeRequestRepository contactChangeRequestRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationCreationRequestRepository organizationCreationRequestRepository;
+    private final ApprovalPolicyRepository approvalPolicyRepository;
 
     @Autowired
     public UserService(UserRepository userRepository,
@@ -48,7 +49,7 @@ public class UserService {
                        RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository,
                        ContactRepository contactRepository, ContactChangeRequestRepository contactChangeRequestRepository,
                        OrganizationRepository organizationRepository,
-                       OrganizationCreationRequestRepository organizationCreationRequestRepository){
+                       OrganizationCreationRequestRepository organizationCreationRequestRepository, ApprovalPolicyRepository approvalPolicyRepository){
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
@@ -60,6 +61,7 @@ public class UserService {
         this.contactChangeRequestRepository = contactChangeRequestRepository;
         this.organizationRepository = organizationRepository;
         this.organizationCreationRequestRepository = organizationCreationRequestRepository;
+        this.approvalPolicyRepository = approvalPolicyRepository;
     }
 
     public String generateToken(User user){
@@ -197,6 +199,7 @@ public class UserService {
                 (user.getRole() == null ? null : user.getRole().name()));
         responseDTO.setPermissions(user.getOrgRole() == null ? List.of() : user.getOrgRole().getPermissions().stream().map(Enum::name).sorted().toList());
         responseDTO.setStatus(user.getStatus().name());
+        responseDTO.setNeedsApproval(user.getOrgRole() != null && approvalPolicyRepository.existsByRequesterRole(user.getOrgRole()));
         return responseDTO;
     }
 

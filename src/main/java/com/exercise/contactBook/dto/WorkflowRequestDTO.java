@@ -10,7 +10,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class WorkFlowRequestDTO {
+public class WorkflowRequestDTO {
     @NotBlank(message = "Give the flow a name")
     @Size(max = 60, message = "Name is too long")
     private String name;

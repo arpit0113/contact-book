@@ -819,6 +819,38 @@ public class ContactService {
         dto.setStatus(request.getStatus());
         dto.setRequestedByName(request.getRequestedBy().getName());
         dto.setReviewNote(request.getReviewNote());
+
+        ApprovalWorkflow workflow = request.getWorkflow();
+        if(workflow != null){
+            boolean any = isAnyOne(request);
+            int currentStep = stepNumber(request);
+            dto.setWorkflowName(workflow.getName());
+            dto.setMode(any? ApprovalMode.ANY_ONE : ApprovalMode.SEQUENTIAL);
+            dto.setCurrentStep(currentStep);
+            dto.setTotalSteps(workflow.getSteps().size());
+
+            List<StepProgressDTO> steps = new ArrayList<>();
+            for(ApprovalStep s : workflow.getSteps()){
+                String state;
+                if(request.getStatus() == RequestStatus.APPROVED) state = "DONE";
+                else if (any) state = request.getStatus() == RequestStatus.REJECTED ? "UPCOMING" : "CURRENT";
+                else if (s.getStepOrder() < currentStep) {
+                    state = "DONE";
+                } else if (s.getStepOrder() == currentStep) {
+                    state = request.getStatus() == RequestStatus.REJECTED ? "REJECTED" : "CURRENT";
+                }
+                else state = "UPCOMING";
+                steps.add(new StepProgressDTO(s.getStepOrder(), s.getApproverRole().getName(), state));
+            }
+            dto.setSteps(steps);
+            if (request.getStatus() == RequestStatus.PENDING){
+                dto.setWaitingFor(any
+                ? workflow.getSteps().stream().map(s -> s.getApproverRole().getName()).collect(Collectors.joining(" or "))
+                        : workflow.getSteps().stream().filter(s -> s.getStepOrder() == currentStep)
+                        .map(s-> s.getApproverRole().getName()).findFirst().orElse(null));
+            }
+        }
+
         return dto;
     }
 
