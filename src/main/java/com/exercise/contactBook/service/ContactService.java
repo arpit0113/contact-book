@@ -10,6 +10,9 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import jakarta.validation.Validator;
 import org.apache.commons.csv.CSVFormat;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,6 +71,31 @@ public class ContactService {
         return contacts.stream()
                 .map(this::toContactResponseDTO)
                 .toList();
+    }
+
+    public ContactPageDTO getContactsPage(String search, Sort sort, ContactType type, int page, int size) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() == Role.USER) type = ContactType.PERSONAL;
+
+
+        String searchParam = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+
+
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), safeSize,
+                sort.and(Sort.by(Sort.Direction.ASC, "id")));
+
+
+        Slice<Contact> slice = contactRepository.findContactsPage(
+                currentUser, currentUser.getOrganization(), type, searchParam, pageable);
+
+
+        List<ContactResponseDTO> content = slice.getContent().stream()
+                .map(this::toContactResponseDTO)
+                .toList();
+
+
+        return new ContactPageDTO(content, slice.getNumber(), slice.getSize(), slice.hasNext());
     }
 
     public ContactResponseDTO getContactById(Long id){

@@ -39,6 +39,20 @@ public class ContactController {
         return ResponseEntity.ok(results);
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<ContactPageDTO> getContactsPaged(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ContactType type,
+            @RequestParam(defaultValue = "0" ) int page,
+            @RequestParam(defaultValue = "20") int size,
+            Sort sort) {
+
+        if (sort.isUnsorted()) {
+            sort = Sort.by(Sort.Direction.ASC, "name");
+        }
+        return ResponseEntity.ok(contactService.getContactsPage(search,sort,type,page,size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ContactResponseDTO> getContactById(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.OK)
