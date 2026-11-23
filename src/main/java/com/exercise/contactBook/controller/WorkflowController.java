@@ -5,6 +5,7 @@ import com.exercise.contactBook.dto.PolicyRequestDTO;
 import com.exercise.contactBook.dto.WorkflowDTO;
 import com.exercise.contactBook.dto.WorkflowRequestDTO;
 import com.exercise.contactBook.enums.ContactActionType;
+import com.exercise.contactBook.security.WorkflowManage;
 import com.exercise.contactBook.service.WorkflowService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,26 +25,26 @@ public class WorkflowController {
 
 
     @GetMapping
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<List<WorkflowDTO>> list() { return ResponseEntity.ok(workflowService.listWorkflows()); }
 
 
     @PostMapping
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<WorkflowDTO> create(@Valid @RequestBody WorkflowRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(workflowService.createWorkflow(dto));
     }
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<WorkflowDTO> update(@PathVariable Long id, @Valid @RequestBody WorkflowRequestDTO dto) {
         return ResponseEntity.ok(workflowService.updateWorkflow(id, dto));
     }
 
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         workflowService.deleteWorkflow(id);
         return ResponseEntity.noContent().build();
@@ -51,19 +52,19 @@ public class WorkflowController {
 
 
     @GetMapping("/policies")
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<List<PolicyDTO>> policies() { return ResponseEntity.ok(workflowService.listPolicies()); }
 
 
     @PutMapping("/policies")
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<PolicyDTO> setPolicy(@Valid @RequestBody PolicyRequestDTO dto) {
         return ResponseEntity.ok(workflowService.setPolicy(dto));
     }
 
 
     @DeleteMapping("/policies")
-    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    @WorkflowManage
     public ResponseEntity<Void> clearPolicy(@RequestParam ContactActionType actionType, @RequestParam Long roleId) {
         workflowService.clearPolicy(actionType, roleId);
         return ResponseEntity.noContent().build();

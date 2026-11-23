@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -27,7 +26,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email).orElseThrow(()-> new UsernameNotFoundException("User Not found with email" + email));
+        return build(user);
+    }
 
+    public UserDetails build(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         if(user.getRole() != null){
             authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
@@ -36,11 +38,11 @@ public class CustomUserDetailsService implements UserDetailsService {
             user.getOrgRole().getPermissions()
                     .forEach( p -> authorities.add(new SimpleGrantedAuthority(p.name())));
         }
-      return org.springframework.security.core.userdetails.User.builder()
-              .username(user.getEmail())
-              .password(user.getPassword()== null ?"" : user.getPassword())
-              .authorities(authorities)
-              .disabled(user.getStatus() == UserStatus.PENDING)
-              .build();
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password("")
+                .authorities(authorities)
+                .disabled(user.getStatus() == UserStatus.PENDING)
+                .build();
     }
 }

@@ -2,6 +2,7 @@ package com.exercise.contactBook.controller;
 
 import com.exercise.contactBook.dto.OrgCreationRequestResponseDTO;
 import com.exercise.contactBook.dto.OrgRequestReviewDTO;
+import com.exercise.contactBook.security.SuperAdminOnly;
 import com.exercise.contactBook.service.OrganizationRequestService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/super-admin/organization-requests")
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+@SuperAdminOnly
 public class SuperAdminController {
 
     private final OrganizationRequestService organizationRequestService;

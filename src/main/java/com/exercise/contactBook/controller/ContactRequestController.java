@@ -3,6 +3,7 @@ package com.exercise.contactBook.controller;
 import com.exercise.contactBook.dto.ContactChangeRequestDTO;
 import com.exercise.contactBook.dto.ContactResponseDTO;
 import com.exercise.contactBook.dto.ReviewRequestDTO;
+import com.exercise.contactBook.security.RequestApprove;
 import com.exercise.contactBook.service.ContactService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,7 +23,7 @@ public class ContactRequestController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAuthority('REQUEST_APPROVE')")
+    @RequestApprove
     public ResponseEntity<List<ContactChangeRequestDTO>> getPendingRequests(){
         return ResponseEntity.status(HttpStatus.OK).body(contactService.getPendingRequests());
     }
@@ -33,13 +34,13 @@ public class ContactRequestController {
     }
 
     @PostMapping("/{requestId}/approve")
-    @PreAuthorize("hasAuthority('REQUEST_APPROVE')")
+    @RequestApprove
     public ResponseEntity<ContactResponseDTO> approve(@PathVariable Long requestId){
         return ResponseEntity.ok(contactService.approveRequest(requestId));
     }
 
     @PostMapping("/{requestId}/reject")
-    @PreAuthorize("hasAuthority('REQUEST_APPROVE')")
+    @RequestApprove
     public ResponseEntity<Void> reject(@PathVariable Long requestId , @RequestBody(required = false) ReviewRequestDTO dto){
         contactService.rejectRequest(requestId, dto);
         return ResponseEntity.noContent().build();

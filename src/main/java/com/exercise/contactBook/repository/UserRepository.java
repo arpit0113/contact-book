@@ -16,4 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByOrganizationAndStatus(Organization organization, UserStatus status);
     List<User> findByOrgRoleIsNull();
     long countByOrgRole(OrgRole role);
+    Optional<User> findByKeycloakId(String keycloakId);
 }

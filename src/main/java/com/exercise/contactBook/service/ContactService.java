@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -459,6 +458,11 @@ public class ContactService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request has already been reviewed");
         }
         return request;
+    }
+
+    public CountDTO getCount(){
+        long count = contactRepository.countByUser(getCurrentUser());
+        return new CountDTO(count);
     }
 
     //helper methodss
