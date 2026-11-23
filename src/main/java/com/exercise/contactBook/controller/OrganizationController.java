@@ -2,6 +2,7 @@ package com.exercise.contactBook.controller;
 
 import com.exercise.contactBook.dto.ApproveUserRequestDTO;
 import com.exercise.contactBook.dto.PendingUserDTO;
+import com.exercise.contactBook.security.UserApprove;
 import com.exercise.contactBook.service.OrganizationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +21,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/pending-users")
-    @PreAuthorize("hasAuthority('USER_APPROVE')")
+    @UserApprove
     public ResponseEntity<List<PendingUserDTO>> getPendingUsers(){
         return ResponseEntity.ok(organizationService.getPendingUsers());
     }
 
     @PostMapping("/pending-users/{id}/approve")
-    @PreAuthorize("hasAuthority('USER_APPROVE')")
+    @UserApprove
     public ResponseEntity<Void> approveUser(@PathVariable Long id ,
                                             @Valid @RequestBody ApproveUserRequestDTO dto){
         organizationService.ApproveUser(id, dto);
@@ -34,7 +35,7 @@ public class OrganizationController {
     }
 
     @DeleteMapping("/pending-users/{id}/reject")
-    @PreAuthorize("hasAuthority('USER_APPROVE')")
+    @UserApprove
     public ResponseEntity<Void> rejectUser(@PathVariable Long id){
         organizationService.rejectUser(id);
         return  ResponseEntity.noContent().build();

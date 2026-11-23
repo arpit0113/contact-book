@@ -1,0 +1,88 @@
+body, [class*="-c-login"]:not([class*="__"]) { background:#f8f9fa !important; background-image:none !important; }
+
+[class*="-c-login__container"] {
+    display:grid !important; grid-template-columns:1fr 1.2fr; grid-template-areas:"header main";
+    width:100%; max-width:760px; margin:auto; background:#fff;
+    border-radius:.5rem; box-shadow:0 .125rem .25rem rgba(0,0,0,.075); overflow:hidden;
+}
+
+/* left: brand panel */
+[class*="-c-login__container"] > header {
+    grid-area:header; display:flex !important; flex-direction:column; align-items:center; justify-content:center;
+    padding:2rem !important; margin:0 !important; width:auto !important; max-width:none !important;
+    text-align:center; border-right:1px solid #dee2e6;
+}
+#kc-header-wrapper {
+    font-size:0 !important; line-height:0 !important; padding:0 !important; margin:0 !important;
+    display:flex; flex-direction:column; align-items:center;
+}
+#kc-header-wrapper > * { display:none !important; }
+#kc-header-wrapper::before {
+    content:""; display:block; width:64px; height:64px; margin-bottom:1rem; border-radius:1rem;
+    background-color:rgba(13,110,253,.1); background-repeat:no-repeat; background-position:center; background-size:32px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%230d6efd'%3E%3Cpath d='M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5'/%3E%3C/svg%3E");
+}
+#kc-header-wrapper::after {
+    content:"Contact Book"; font-size:1.25rem; line-height:1.5; font-weight:500; color:#212529;
+    text-transform:none; letter-spacing:normal; white-space:nowrap; margin-bottom:.5rem;
+}
+[class*="-c-login__container"] > header::after {
+    content:"Keep your contacts organized and always within reach.";
+    font-size:.875rem; line-height:1.4; color:#6c757d; text-transform:none; letter-spacing:normal; max-width:16rem;
+}
+
+/* right: form */
+[class*="-c-login__container"] > main {
+    grid-area:main; margin:0 !important; padding:0 !important; width:100% !important; max-width:none !important;
+    min-width:0; box-shadow:none !important; background:transparent !important;
+}
+[class*="__main-header"], [class*="__main-body"],
+[class*="__main-footer"]:not([class*="band"]):not([class*="links"]) {
+    padding:1rem 2rem 0 !important; width:100% !important; max-width:none !important; box-sizing:border-box;
+}
+#kc-page-title { font-size:1.15rem; margin:0; }
+[class*="-c-form-control"] { border-radius:.375rem; }
+[class*="-c-button"][class*="pf-m-primary"] { background:#0d6efd !important; border-radius:.375rem; width:100%; }
+#kc-social-providers ul { display:block !important; list-style:none; padding:0; margin:0; }
+#kc-social-providers li { width:100%; margin:0; }
+#kc-social-providers a {
+    display:block; width:100%; box-sizing:border-box; padding:.5rem; text-align:center; text-decoration:none;
+    border:1px solid #6c757d; color:#6c757d; background:transparent; border-radius:.375rem;
+}
+#kc-social-providers h2 { text-align:center; font-size:.875rem; color:#6c757d; }
+#kc-registration-container, #kc-registration { text-align:center; font-size:.875rem; color:#6c757d; }
+
+@media (max-width:767px) {
+    [class*="-c-login__container"] { grid-template-columns:1fr; grid-template-areas:"header" "main"; }
+    [class*="-c-login__container"] > header { border-right:0; padding:1.5rem !important; }
+}
+
+/* 1. centre the logo, name and tagline in the left box */
+[class*="-c-login__container"] > header {
+    align-items:center !important; justify-content:center !important; text-align:center;
+    padding-inline:1.5rem !important; margin:0 !important; box-sizing:border-box;
+}
+#kc-header-wrapper {
+    width:100% !important; align-items:center !important; justify-content:center;
+    padding:0 !important; margin:0 !important; text-align:center;
+}
+#kc-header-wrapper::before { margin-left:auto; margin-right:auto; }
+[class*="-c-login__container"] > header::after { text-align:center; margin:0 auto; }
+
+/* 2. name bigger and bolder */
+#kc-header-wrapper::after { font-size:1.6rem !important; font-weight:700 !important; }
+
+/* 3. "Sign Up" stays on one line */
+#kc-registration a, #kc-registration-container a { white-space:nowrap; }
+#kc-registration, #kc-registration-container { text-align:center; }
+
+/* 4. less space between Sign Up, the line, "or" and the Google button */
+[class*="__main-footer"] { margin-top:0 !important; padding-top:0 !important; }
+[class*="-c-login__main-footer-band"] { padding-top:.5rem !important; padding-bottom:.5rem !important; }
+#kc-registration-container, #kc-registration { margin-bottom:.5rem !important; padding-bottom:0 !important; }
+#kc-social-providers { margin-top:.5rem !important; padding-top:0 !important; }
+#kc-social-providers h2 { margin:.5rem 0 !important; }
+
+/* 5. space below the Google button */
+#kc-social-providers { margin-bottom:1.5rem !important; }
+[class*="-c-login__container"] > main { padding-bottom:1.5rem !important; }

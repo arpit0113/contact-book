@@ -48,6 +48,8 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
 
 
     void deleteByUserAndType(User currentUser, ContactType contactType);
+
+    long countByUser(User currentuser);
 }
 
 

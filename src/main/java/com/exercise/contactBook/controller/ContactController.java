@@ -6,10 +6,8 @@ import com.exercise.contactBook.service.ContactService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -53,7 +51,7 @@ public class ContactController {
         return ResponseEntity.ok(contactService.getContactsPage(search,sort,type,page,size));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\\\d+}")
     public ResponseEntity<ContactResponseDTO> getContactById(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(contactService.getContactById(id));
@@ -88,5 +86,10 @@ public class ContactController {
         contactService.deleteContact(id);
         return ResponseEntity.noContent().build();
 
+    }
+
+    @GetMapping("/count")
+    public ResponseEntity<CountDTO> contactCount(){
+        return ResponseEntity.ok(contactService.getCount());
     }
 }

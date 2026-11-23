@@ -5,9 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class TokenPairResponseDTO {
-    private String accessToken;
-    private String refreshToken;
+@NoArgsConstructor
+public class CountDTO {
+    private long count;
 }

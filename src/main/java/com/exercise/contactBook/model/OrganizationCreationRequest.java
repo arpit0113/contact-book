@@ -33,9 +33,6 @@ public class OrganizationCreationRequest {
     private String adminEmail;
 
     @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false)
     private String otp;
 
     @Column(nullable = false)

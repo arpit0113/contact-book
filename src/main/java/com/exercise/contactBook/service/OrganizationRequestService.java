@@ -1,7 +1,6 @@
 package com.exercise.contactBook.service;
 
 import com.exercise.contactBook.dto.*;
-import com.exercise.contactBook.enums.AuthProvider;
 import com.exercise.contactBook.enums.OrgRequestStatus;
 import com.exercise.contactBook.enums.Role;
 import com.exercise.contactBook.enums.UserStatus;
@@ -12,11 +11,15 @@ import com.exercise.contactBook.model.User;
 import com.exercise.contactBook.repository.OrganizationCreationRequestRepository;
 import com.exercise.contactBook.repository.OrganizationRepository;
 import com.exercise.contactBook.repository.UserRepository;
+import com.exercise.contactBook.security.KeycloakAdminClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -25,27 +28,28 @@ import java.util.List;
 
 @Service
 public class OrganizationRequestService {
-private final OrganizationCreationRequestRepository requestRepository;
-private final OrganizationRepository organizationRepository;
-private final UserRepository userRepository;
-private final PasswordEncoder passwordEncoder;
-private final OtpService otpService;
-private final MailService mailService;
-private final OrganizationService organizationService;
-private final OrganizationCreationRequestRepository organizationCreationRequestRepository;
-private final RoleService roleService;
-private final WorkflowService workflowService;
+    private static final Logger log = LoggerFactory.getLogger(OrganizationRequestService.class);
+    private final OrganizationCreationRequestRepository requestRepository;
+    private final OrganizationRepository organizationRepository;
+    private final UserRepository userRepository;
+    private final KeycloakAdminClient keycloakAdminClient;
+    private final OtpService otpService;
+    private final MailService mailService;
+    private final OrganizationService organizationService;
+    private final OrganizationCreationRequestRepository organizationCreationRequestRepository;
+    private final RoleService roleService;
+    private final WorkflowService workflowService;
     public OrganizationRequestService(OrganizationCreationRequestRepository requestRepository,
                                       OrganizationRepository organizationRepository,
                                       UserRepository userRepository,
-                                      PasswordEncoder passwordEncoder,
+                                      KeycloakAdminClient keycloakAdminClient,
                                       OtpService otpService,
                                       MailService mailService,
                                       OrganizationService organizationService, OrganizationCreationRequestRepository organizationCreationRequestRepository, RoleService roleService, WorkflowService workflowService) {
         this.requestRepository = requestRepository;
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.keycloakAdminClient = keycloakAdminClient;
         this.otpService = otpService;
         this.mailService = mailService;
         this.organizationService = organizationService;
@@ -74,29 +78,28 @@ private final WorkflowService workflowService;
         OrganizationCreationRequest request = requestRepository.findByAdminEmail(dto.getAdminEmail())
                 .orElse(new OrganizationCreationRequest());
         if(request.getId() != null) {
-        switch (request.getStatus()){
-            case PENDING_APPROVAL -> throw new ResponseStatusException(HttpStatus.CONFLICT, "Your request is already verified and waiting for admin's approval");
-            case APPROVED -> throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already registered please log in");
-            case PENDING_OTP -> {
-                if(request.getLastOtpSentAt() != null
-                        && request.getLastOtpSentAt().isAfter(Instant.now().minus(60, ChronoUnit.SECONDS))){
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "an otp just sent wait for a minute");
+            switch (request.getStatus()){
+                case PENDING_APPROVAL -> throw new ResponseStatusException(HttpStatus.CONFLICT, "Your request is already verified and waiting for admin's approval");
+                case APPROVED -> throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already registered please log in");
+                case PENDING_OTP -> {
+                    if(request.getLastOtpSentAt() != null
+                            && request.getLastOtpSentAt().isAfter(Instant.now().minus(60, ChronoUnit.SECONDS))){
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "an otp just sent wait for a minute");
+                    }
+                }
+                case REJECTED -> {
+                    request.setReviewNote(null);
+                    request.setReviewedBy(null);
                 }
             }
-            case REJECTED -> {
-                request.setReviewNote(null);
-                request.setReviewedBy(null);
-            }
-        }
         }
         request.setAdminName(dto.getAdminName());
         request.setAdminEmail(dto.getAdminEmail());
-        request.setPassword(passwordEncoder.encode(dto.getPassword()));
         request.setOrgDomain(domain);
         int dotIndex = domain.indexOf('.');
         request.setOrgName((dto.getOrgName() != null && !dto.getOrgName().isBlank())
-                        ?dto.getOrgName()
-                        :(dotIndex > 0  ? domain.substring(0,dotIndex) : domain));
+                ?dto.getOrgName()
+                :(dotIndex > 0  ? domain.substring(0,dotIndex) : domain));
         String otp = otpService.generateOtp();
         request.setOtp(otpService.hashOtp(otp));
         request.setOtpExpireAt(Instant.now().plus(3, ChronoUnit.MINUTES));
@@ -156,7 +159,7 @@ private final WorkflowService workflowService;
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This request is not waiting for otp verification");
         }
         if(request.getLastOtpSentAt() != null
-        &&request.getLastOtpSentAt().isAfter(Instant.now().minus(60, ChronoUnit.SECONDS))){
+                &&request.getLastOtpSentAt().isAfter(Instant.now().minus(60, ChronoUnit.SECONDS))){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "TO frequent try after 60 seconds");
         }
         String otp = otpService.generateOtp();
@@ -182,12 +185,26 @@ private final WorkflowService workflowService;
         org.setDefaultRegion("IN");
         Organization savedOrg = organizationRepository.save(org);
 
+        // The admin logs in through Keycloak. Reuse their Keycloak account if they already have
+        // one (for example they signed in with Google), otherwise create it with a verified email
+        // and let Keycloak email them a link to choose a password. If Keycloak fails, the exception
+        // rolls this whole transaction back, so the request stays "pending approval" and approving
+        // again is safe (an already created Keycloak user is found by email and reused).
+        String keycloakId;
+        boolean keycloakUserCreated = false;
+        var existingKeycloakUser = keycloakAdminClient.findUserIdByEmail(request.getAdminEmail());
+        if (existingKeycloakUser.isPresent()) {
+            keycloakId = existingKeycloakUser.get();
+        } else {
+            keycloakId = keycloakAdminClient.createUser(request.getAdminEmail(), request.getAdminName());
+            keycloakUserCreated = true;
+        }
+
         User admin = new User();
         admin.setName(request.getAdminName());
         admin.setEmail(request.getAdminEmail());
+        admin.setKeycloakId(keycloakId);
         admin.setStatus(UserStatus.ACTIVE);
-        admin.setPassword(request.getPassword());
-        admin.setProvider(AuthProvider.LOCAL);
         admin.setOrganization(savedOrg);
         admin.setRole(Role.ADMIN);
         roleService.ensureDefaultRoles(savedOrg);
@@ -202,6 +219,22 @@ private final WorkflowService workflowService;
         request.setReviewedBy(superAdmin);
 
         requestRepository.save(request);
+
+        if (keycloakUserCreated) {
+            final String newKeycloakId = keycloakId;
+            // Only email after the approval is really saved. If this fails the admin can still use
+            // "Forgot password" on the Keycloak login page.
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        keycloakAdminClient.sendSetPasswordEmail(newKeycloakId);
+                    } catch (Exception e) {
+                        log.warn("Could not send the set-password email for Keycloak user {}: {}", newKeycloakId, e.getMessage());
+                    }
+                }
+            });
+        }
     }
 
 

@@ -1,6 +1,5 @@
 package com.exercise.contactBook.model;
 
-import com.exercise.contactBook.enums.AuthProvider;
 import com.exercise.contactBook.enums.Role;
 import com.exercise.contactBook.enums.UserStatus;
 import jakarta.persistence.*;
@@ -8,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 
 import java.util.List;
 
@@ -28,10 +26,9 @@ public class User {
     @Column(unique = true , nullable = false)
     private String email;
 
-    private String password;
+    @Column(name = "keycloak_id", unique = true)
+    private String keycloakId;
 
-    @Enumerated(EnumType.STRING)
-    private AuthProvider provider;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id") // org can be null for super admin
